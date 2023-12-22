@@ -10,17 +10,16 @@ then
     echo "Docker is already Installed"
 else
     sudo apt-get update
-    sudo apt-get install ca-certificates curl gnupg -y
+    sudo apt-get install -y ca-certificates curl gnupg
     sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o
-    /etc/apt/keyrings/docker.gpg
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
     sudo chmod a+r /etc/apt/keyrings/docker.gpg
-    # Add the repository to Apt sources:
-    echo "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg]
-    https://download.docker.com/linux/ubuntu "$(. /etc/os-release && echo
-    "$VERSION_CODENAME")" stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     sudo apt-get update
-    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 
 echo "STEP-2:- Adding kubernetes repos"
@@ -111,12 +110,12 @@ sudo systemctl restart containerd
 echo "Step-8: Intializing kubernetes kubeadm"
 #echo -n "Initializing kubernetes for Nodes,use 'M or m' for master-node and 'W or w' for worker-node: "
 
-sudo kubeadm config images pull --cri-socket=unix:///run/containerd/containerd.sock
+sudo kubeadm config images pull --cri-socket=unix:///var/run/containerd/containerd.sock
 if [[ "$hostname" == "M" || "$hostname" == "m" ]];
 then
     echo ""
     echo ""
-    sudo kubeadm init --ignore-preflight-errors=all --cri-socket=unix:///run/containerd/containerd.sock --pod-network-cidr=192.168.0.0/16
+    sudo kubeadm init --ignore-preflight-errors=all --cri-socket=unix:///var/run/containerd/containerd.sock --pod-network-cidr=192.168.0.0/16
 
     #it will generate a node join token list
     mkdir -p $HOME/.kube
@@ -124,13 +123,12 @@ then
     sudo chown $(id -u):$(id -g) $HOME/.kube/config
     #Adding CNI (Container Network Interface)
     #Adding Kube-flannel as CNI
-
-    kubectl taint nodes --all node-role.kubernetes.io/master
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane-
     wget https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
     sed -i 's/10.244.0.0\/16/192.168.0.0\/16/g' kube-flannel.yml
     kubectl apply -f kube-flannel.yml
     curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-    echo "Use this token to join other nodes to cluster with --cri-socket=unix:///run/containerd/containerd.sock"
+    echo "Use this token to join other nodes to cluster with --cri-socket=unix:///var/run/containerd/containerd.sock"
     echo ""
     echo ""
     echo ""
