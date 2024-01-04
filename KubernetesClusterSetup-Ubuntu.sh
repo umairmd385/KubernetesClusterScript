@@ -78,7 +78,7 @@ echo "Step-5: Disable swap"
 sudo sed -i.bak -r 's/(.+ swap .+)/#\1/' /etc/fstab
 sudo swapoff -a
 
-echo "Step-6: Configuring Docker for container runtime engine"4sudo mkdir -p /etc/systemd/system/docker.service.d
+echo "Step-6: Configuring Docker Daemon"
 
 sudo tee /etc/docker/daemon.json <<EOF
 {
@@ -97,8 +97,7 @@ sudo systemctl daemon-reload
 sudo systemctl restart docker
 sudo systemctl enable docker
 
-#enabling kubelet service
-echo "Step-7: Removing the containerd config file"
+echo "Step-7: Setting Containerd as container runtime engine"
 
 sudo chmod u+w /etc/containerd/config.toml
 sudo containerd config default > /etc/containerd/config.toml
@@ -108,8 +107,8 @@ sudo systemctl daemon-reload
 sudo systemctl restart containerd
 
 echo "Step-8: Intializing kubernetes kubeadm"
-#echo -n "Initializing kubernetes for Nodes,use 'M or m' for master-node and 'W or w' for worker-node: "
 
+sudo systemctl restart kubelet
 sudo kubeadm config images pull --cri-socket=unix:///var/run/containerd/containerd.sock
 if [[ "$hostname" == "M" || "$hostname" == "m" ]];
 then
