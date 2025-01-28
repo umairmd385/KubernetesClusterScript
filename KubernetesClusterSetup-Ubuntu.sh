@@ -9,50 +9,63 @@ if [ $? -eq 0 ]
 then
     echo "Docker is already Installed"
 else
-    sudo apt-get update
-    sudo apt-get install -y ca-certificates curl gnupg
+    # Add Docker's official GPG key:
+    sudo apt-get update -y
+    sudo apt-get install ca-certificates curl -y
     sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+    sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+    sudo chmod a+r /etc/apt/keyrings/docker.asc
+    
+    # Add the repository to Apt sources:
     echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt-get update
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update -y
+    #Install Docker Cli,Engine
+    
+    sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+    
+    sudo systemctl start docker
+    sudo usermod -a -G docker $USER
+    sudo chkconfig docker on
+    sudo apt-get install -y git
+    sudo chmod 666 /var/run/docker.sock
+    sudo systemctl daemon-reload
+    sudo systemctl restart docker
 fi
 
 echo "STEP-2:- Adding kubernetes repos"
 
-sudo apt-get update -y
-sudo apt-get install -y apt-transport-https ca-certificates curl gpg git wget
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
 sudo mkdir -p /etc/apt/keyrings
 sudo chmod -R 755 /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 sudo apt update -y
 sudo apt -y install kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "STEP-3:- Setting hostname of nodes"
 
-read -p "To set hostname for master node then use 'M or m' and To set hostname for worker node then use 'W or w': " hostname
-echo ""echo "Your option: $hostname"
-if [[ "$hostname" == "M" || "$hostname" == "m" ]]
-then
-    echo ""
-    echo "Setting Hostname for Master-Node"
-    read -p "Enter your hostname for master node: " mset_hostname
-    sudo hostnamectl set-hostname $mset_hostname
-elif [[ "$hostname" == "W" || "$hostname" == "w" ]]
-then
-    echo ""
-    echo "Setting Hostname for Worker-node"
-    read -p "Enter your hostname for worker node: " wset_hostname
-    sudo hostnamectl set-hostname $wset_hostname
-else
-    echo "You have used wrong option to edit"
-fi
+# read -p "To set hostname for master node then use 'M or m' and To set hostname for worker node then use 'W or w': " hostname
+# echo ""echo "Your option: $hostname"
+# if [[ "$hostname" == "M" || "$hostname" == "m" ]]
+# then
+#     echo ""
+#     echo "Setting Hostname for Master-Node"
+#     read -p "Enter your hostname for master node: " mset_hostname
+#     sudo hostnamectl set-hostname $mset_hostname
+# elif [[ "$hostname" == "W" || "$hostname" == "w" ]]
+# then
+#     echo ""
+#     echo "Setting Hostname for Worker-node"
+#     read -p "Enter your hostname for worker node: " wset_hostname
+#     sudo hostnamectl set-hostname $wset_hostname
+# else
+#     echo "You have used wrong option to edit"
+# fi
 
 echo "Step-4: Configuring sysctl"
 
